@@ -1,9 +1,17 @@
-
-import { SignUpForm } from "@/modules/sign-up/ui/SignUp";
+import { auth } from "@/lib/auth";
+import { SignUpForm } from "@/modules/auth/ui/SignUp";
+import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-const Page = () => {
+const Page = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!!session) {
+    redirect("/");
+  }
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
