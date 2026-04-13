@@ -13,6 +13,7 @@ import { ChevronDown, DollarSignIcon, LogOut, Settings, Triangle, User } from "l
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GeneratedAvatar } from "@/components/generate-avata";
 import { Button } from "@/components/ui/button";
+import { ButtonAuth } from "@/hooks/useAuth";
 
 
  
@@ -69,7 +70,7 @@ export const SidebarUserFooter = () => {
             className="text-red-500"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Logout
+            <ButtonAuth/>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

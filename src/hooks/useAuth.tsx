@@ -39,7 +39,7 @@ export const useAuth = () => {
 export const ButtonAuth = () => {
   const router = useRouter();
   return (
-    <Button
+    <Button className="border-none"
       onClick={() =>
         authClient.signOut({
           fetchOptions: {
