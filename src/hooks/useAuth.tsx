@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -7,14 +6,14 @@ import { authService } from "@/modules/auth/server/auth-server";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-
 export const useAuth = () => {
   const [isPending, setIsPending] = useState(false);
-
+  const router = useRouter();
   const login = async (email: string, password: string) => {
     try {
       setIsPending(true);
       await authService.login(email, password);
+        router.push("/dashboard");
     } finally {
       setIsPending(false);
     }
@@ -24,6 +23,7 @@ export const useAuth = () => {
     try {
       setIsPending(true);
       await authService.register(name, email, password);
+        router.push("/dashboard");
     } finally {
       setIsPending(false);
     }
@@ -37,14 +37,20 @@ export const useAuth = () => {
 };
 
 export const ButtonAuth = () => {
-    const router = useRouter()
-    return (
-        <Button onClick={() => authClient.signOut({fetchOptions: {
+  const router = useRouter();
+  return (
+    <Button
+      onClick={() =>
+        authClient.signOut({
+          fetchOptions: {
             onSuccess: () => {
-                router.push("/sign-in")
-            }
-        }})} >
-            Sign Out
-        </Button>
-    )
-}
+              router.push("/sign-in");
+            },
+          },
+        })
+      }
+    >
+      Sign Out
+    </Button>
+  );
+};

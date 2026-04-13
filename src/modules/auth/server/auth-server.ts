@@ -6,9 +6,9 @@ export const authService = {
   login: (email: string, password: string) => {
     return new Promise<void>((resolve, reject) => {
       authClient.signIn.email(
-        { email, password, callbackURL: "/" },
+        { email, password },
         {
-          onSuccess: () => resolve(), // ✅ fix ở đây
+          onSuccess: () => resolve(), 
           onError: (err) => reject(err),
         },
       );
@@ -18,7 +18,7 @@ export const authService = {
   register: (name: string, email: string, password: string) => {
     return new Promise<void>((resolve, reject) => {
       authClient.signUp.email(
-        { name, email, password, callbackURL: "/" },
+        { name, email, password },
         {
           onSuccess: () => resolve(),
           onError: (err) => reject(err),
@@ -28,6 +28,6 @@ export const authService = {
   },
 
   social: (provider: "github" | "google") => {
-    return authClient.signIn.social({ provider }, {onSuccess: (ctx) => console.log(ctx)});
+    return authClient.signIn.social({ provider, callbackURL: "/" }, );
   },
 };

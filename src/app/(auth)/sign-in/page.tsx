@@ -10,8 +10,9 @@ const Page = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+
   if (!!session) {
-    redirect("/");
+    redirect("/dasboard");
   }
   return (
     <div className="grid min-h-svh lg:grid-cols-2">

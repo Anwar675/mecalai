@@ -15,7 +15,7 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/hook/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 const formSchema = z
   .object({
@@ -30,7 +30,7 @@ const formSchema = z
   });
 
 export function SignUpForm({ className }: React.ComponentProps<"form">) {
-  const {isPending, social,register} = useAuth()
+  const { isPending, social, register } = useAuth();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -109,7 +109,7 @@ export function SignUpForm({ className }: React.ComponentProps<"form">) {
         />
       </FieldGroup>
 
-      <Button disabled={isPending} variant="custom" type="submit">
+      <Button disabled={isPending} variant="custom" className="py-1" type="submit">
         Sign Up
       </Button>
       <FieldSeparator>Or continue with</FieldSeparator>
@@ -117,7 +117,7 @@ export function SignUpForm({ className }: React.ComponentProps<"form">) {
         <Button
           onClick={() => social("github")}
           disabled={isPending}
-          variant="outline"
+          variant="default"
           type="button"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@ export function SignUpForm({ className }: React.ComponentProps<"form">) {
         <Button
           onClick={() => social("google")}
           disabled={isPending}
-          variant="outline"
+          variant="default"
           type="button"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
