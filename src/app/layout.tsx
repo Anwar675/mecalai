@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Inconsolata, Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { TRPCReactProvider } from "@/trpc/client";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const inconsolata = Inconsolata({
   subsets: ["latin"],
@@ -22,12 +23,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body
-        className={`${inconsolata.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <TRPCReactProvider>
+      <html lang="en" className={cn("font-sans", geist.variable)}>
+        <body className={`${inconsolata.variable} antialiased`}>
+          {children}
+        </body>
+      </html>
+    </TRPCReactProvider>
   );
 }

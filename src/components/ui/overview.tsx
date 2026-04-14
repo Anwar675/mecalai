@@ -81,7 +81,7 @@ export const Overview = () => {
           <Button className="flex items-center gap-2 bg-background-custom text-white px-6 py-3 rounded-full">
             Gọi ngay
           </Button>
-          <Button className="px-5 py-3  border rounded-full ">
+          <Button className="px-5 py-3 bg-white  border rounded-full ">
             Try Free
           </Button>
         </div>
