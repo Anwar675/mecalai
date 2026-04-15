@@ -6,7 +6,7 @@ const Page = () => {
     return (
         <div>
             <ButtonAuth />
-            <HomeView />
+        
         </div>
     )
 }

@@ -41,7 +41,7 @@ const secondSection = [
 ];
 
 export const DashBoardSidebar = () => {
-  const pathname = "/dashboard/meetings";
+  const pathname = usePathname()
   return (
     <Sidebar>
       <SidebarHeader>

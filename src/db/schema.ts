@@ -7,6 +7,7 @@ import {
   integer,
   varchar,
 } from "drizzle-orm/pg-core";
+import { nanoid } from "nanoid";
 
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -14,6 +15,15 @@ export const usersTable = pgTable("users", {
   age: integer().notNull(),
   email: varchar({ length: 255 }).notNull().unique(),
 });
+
+export const agents = pgTable("agents", {
+  id:text("id").primaryKey().$defaultFn(() => nanoid()),
+  name: text("name").notNull(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  instructions: text("instructions").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updateAt: timestamp("created_at").defaultNow().notNull(),
+})
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
