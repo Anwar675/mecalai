@@ -28,6 +28,6 @@ export const authService = {
   },
 
   social: (provider: "github" | "google") => {
-    return authClient.signIn.social({ provider, callbackURL: "/" }, );
+    return authClient.signIn.social({ provider, callbackURL: "/dashboard" }, );
   },
 };

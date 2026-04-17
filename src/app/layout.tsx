@@ -4,6 +4,7 @@ import "./globals.css";
 import { Inconsolata, Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { TRPCReactProvider } from "@/trpc/client";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import {Toaster} from "@/components/ui/sonner";
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -23,7 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <TRPCReactProvider>
+    <NuqsAdapter>
+       <TRPCReactProvider>
       <html lang="en" className={cn("font-sans", geist.variable)}>
         <body className={`${inconsolata.variable} antialiased`}>
           <Toaster />
@@ -31,5 +33,7 @@ export default function RootLayout({
         </body>
       </html>
     </TRPCReactProvider>
+    </NuqsAdapter>
+   
   );
 }
