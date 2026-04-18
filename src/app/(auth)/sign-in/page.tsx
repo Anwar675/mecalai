@@ -12,7 +12,7 @@ const Page = async () => {
   });
 
   if (!!session) {
-    redirect("/dasboard");
+    redirect("/dashboard");
   }
   return (
     <div className="grid min-h-svh lg:grid-cols-2">

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "./button";
 import { PhoneIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 function Timer({ startSeconds = 272 }: { startSeconds?: number }) {
   const [s, setS] = useState(startSeconds);
@@ -22,6 +23,7 @@ function Timer({ startSeconds = 272 }: { startSeconds?: number }) {
 }
 export const Overview = () => {
   const [micOn, setMicOn] = useState(false);
+  const router = useRouter()
   const [camOn, setCamOn] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   return (
@@ -34,7 +36,7 @@ export const Overview = () => {
         <div className="flex text-[16px] h-10 items-end gap-2">
           <Button className="md:block hidden" variant="outline">Features</Button>
           <Button className="md:block hidden" variant="outline">Pricing</Button>
-          <Button variant="custom">Try Free</Button>
+          <Button onClick={() => router.push('/sign-in')} variant="custom">Try Free</Button>
         </div>
       </div>
       <section className="relative overflow-hidden text-center px-6 py-20 bg-[#1e1e1b] border-b bg-dots">
@@ -78,10 +80,10 @@ export const Overview = () => {
         </p>
 
         <div className="flex justify-center gap-4">
-          <Button className="flex items-center gap-2 bg-background-custom text-white px-6 py-3 rounded-full">
+          <Button onClick={() => router.push('/sign-in')} className="flex items-center gap-2 bg-background-custom text-white px-6 py-3 rounded-full">
             Gọi ngay
           </Button>
-          <Button className="px-5 py-3 bg-white  border rounded-full ">
+          <Button onClick={() => router.push('/sign-in')} className="px-5 py-3 bg-white  border rounded-full ">
             Try Free
           </Button>
         </div>

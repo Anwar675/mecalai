@@ -43,18 +43,38 @@ export const AgentForm = ({
       },
     }),
   );
+  const updateAgent = useMutation(
+    trpc.agents.update.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
+       if (initialValues?.id) {
+    await queryClient.invalidateQueries(
+      trpc.agents.getOne.queryOptions({ id: initialValues.id })
+    );
+  }
+        onSuccess?.();
+      },
+
+      onError: (error) => {
+        toast.error(error.message)  
+      },
+    }),
+  );
   const form = useForm<z.infer<typeof agentsInsertSchema>>({
     resolver: zodResolver(agentsInsertSchema),
     defaultValues: {
       name: initialValues?.name || "",
       instructions: initialValues?.instructions || "",
     },
+
+
   });
+
   const isEdditing = !!initialValues?.id;
-  const isPending = createAgent.isPending;
+  const isPending = createAgent.isPending || updateAgent.isPending
   const onSubmit = (data: z.infer<typeof agentsInsertSchema>) => {
     if (isEdditing) {
-      console.log("Editing is not implemented yet");
+      updateAgent.mutate({...data, id:initialValues.id})
     } else {
       createAgent.mutate(data);
     }
@@ -106,7 +126,7 @@ export const AgentForm = ({
             </Button>
         )}
         <Button disabled={isPending}  variant="custom" className="py-2 rounded-md" type="submit">
-            {isEdditing ? "Save changes" : "Create"}
+            {isEdditing ? "Update" : "Create"}
         </Button>
       </div>
     </form>
