@@ -6,6 +6,7 @@ import {
   index,
   integer,
   varchar,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
@@ -25,6 +26,29 @@ export const agents = pgTable("agents", {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 })
 
+export const meetingStatus = pgEnum("meeting_status", [
+  "upcoming",
+  "active",
+  "complated",
+  "processing",
+  "cancelled"
+])
+
+export const meetings = pgTable("meetings", {
+  id:text("id").primaryKey().$defaultFn(() => nanoid()),
+  name: text("name").notNull(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  status: meetingStatus("status").notNull().default("upcoming") ,
+  agentId: text("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  instructions: text("instructions").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  summary: text("summary"),
+  endedAt: timestamp("ended_at").defaultNow().notNull(),
+  transcriptUrl: text("transcript_url"),
+  recordingUrl: text("transcript_url"),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+})
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
