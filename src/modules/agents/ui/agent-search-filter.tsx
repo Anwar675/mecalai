@@ -15,7 +15,7 @@ export const AgentSearchFilter = () => {
   };
 
   return (
-    <div className="relative mx-8">
+    <div className="relative ">
       <Input
         placeholder="Filter by name"
         className="h-9 bg-white w-50 pl-7 rounded-sm"

@@ -15,6 +15,10 @@ import { useConfirm } from "@/hooks/use-cofirm";
 import { useState } from "react";
 import { UpdateMeetingDialog } from "./update-meeting";
 import { MeetingIdViewHeader } from "./meeting-id-view-header";
+import { UpcomingState } from "@/modules/meetings/ui/upcoming-state";
+import { ActiveState } from "./active-state";
+import { CancelState } from "./cancel-state";
+import { ProcessingState } from "./processing-state";
 
 interface Props {
   meetingId: string;
@@ -39,6 +43,12 @@ export const MeetingIdView = ({ meetingId }: Props) => {
   const { data } = useSuspenseQuery(
     trpc.meetings.getOne.queryOptions({ id: meetingId }),
   );
+
+  const isActive = data.status === "active";
+  const isUpcoming = data.status === "upcoming";
+  const isCompleted = data.status === "completed";
+  const isProcessing = data.status === "processing";
+  const isCacelled = data.status === "cancelled";
   const [RemoveConfirmation, confirmRemove] = useConfirm(
     "Are you sure?",
     "This meeting will be permanently deleted.",
@@ -63,38 +73,17 @@ export const MeetingIdView = ({ meetingId }: Props) => {
           onEdit={() => setUpdateOpen(true)}
           onRemove={handleRemove}
         />
-        <div className="bg-white rounded-lg border">
-          <div className="px-4 py-5 gap-y-5 flex flex-col col-span-5">
-            <div className="flex items-center gap-x-3">
-              <h2 className="text-2xl font-medium">{data.name}</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant="outline"
-                className="flex items-center gap-x-2 capitalize [&>svg]:size-4"
-              >
-                {data.status}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="flex items-center gap-x-2 [&>svg]:size-4"
-              >
-                <VideoIcon className="text-blue-700" />
-                Meeting
-              </Badge>
-            </div>
-            <div className="flex flex-col gap-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Agent</p>
-              <p className="text-base">{data.agentName}</p>
-            </div>
-            {data.summary ? (
-              <div className="flex flex-col gap-y-4">
-                <p className="text-lg font-bold">Summary</p>
-                <p>{data.summary}</p>
-              </div>
-            ) : null}
-          </div>
-        </div>
+        {isCacelled && <CancelState />}
+        {isCompleted && <div>Completed</div>}
+        {isActive && <ActiveState meetingId={meetingId} />}
+        {isProcessing && <ProcessingState />}
+        {isUpcoming && (
+          <UpcomingState
+            meetingId={meetingId}
+            onCancelMeeting={() => {}}
+            isCancelling={false}
+          />
+        )}
       </div>
     </>
   );

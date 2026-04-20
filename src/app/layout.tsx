@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <NuqsAdapter>
        <TRPCReactProvider>
-      <html lang="en" className={cn("font-sans", geist.variable)}>
+      <html lang="en" className={cn("font-sans ", geist.variable)}>
         <body className={`${inconsolata.variable} antialiased`}>
           <Toaster />
           {children}

@@ -25,7 +25,7 @@ export const AgentListHeader = () => {
           New Agent
         </Button>
       </div>
-      <div className="flex items-center gap-x-2 py-4">
+      <div className="flex md:px-8 px-4 items-center gap-x-2 py-4">
         <AgentSearchFilter />
         
       </div>

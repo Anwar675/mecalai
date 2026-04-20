@@ -20,9 +20,9 @@ import { MeetingGetOne } from "../server/type";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { CommandSelect } from "./command-select";
-import { agents } from "@/db/schema";
+
 import { GeneratedAvatar } from "@/components/generate-avata";
-import { useRouter } from "next/navigation";
+
 import { NewAgentDialog } from "@/modules/agents/ui/new-agent";
 
 interface MeetingFormProps {

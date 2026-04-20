@@ -21,7 +21,9 @@ export const DashbarNavbar = () => {
 
   return (
     <>
-      <DashboardComment open={commentOpen} setOpen={setCommentOpen} />
+      {/* <DashboardComment open={commentOpen} setOpen={setCommentOpen}>
+          
+      </DashboardComment> */}
       <nav className="flex gap-6 bg-white items-center border-b p-4">
         <Button onClick={toggleSidebar} className="p-2 rounded-md">
           {state === "collapsed" || isMobile ? (
