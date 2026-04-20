@@ -37,7 +37,6 @@ export const CommandSelect = ({
   className,
 }: Props) => {
   const [open, setOpen] = useState(false);
-
   const selectedOption = options.find((option) => option.value === value);
 
   return (
