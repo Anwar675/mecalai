@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { agents } from "@/db/schema";
 import {
-  baseProcedure,
+
   createTRPCRouter,
   protectedProcedure,
 } from "@/trpc/init";
@@ -16,7 +16,9 @@ import {
 } from "@/lib/constanst";
 import { TRPCError } from "@trpc/server";
 
+
 export const agentsRouter = createTRPCRouter({
+  
   update: protectedProcedure
   .input(agentUpdateSchema)
   .mutation(async ({ctx, input}) => {
@@ -115,6 +117,7 @@ export const agentsRouter = createTRPCRouter({
           userId: ctx.auth.user.id,
         })
         .returning();
+     
       return createAgent;
     }),
 });
