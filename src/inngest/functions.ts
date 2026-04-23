@@ -9,12 +9,12 @@ import { createAgent, openai, TextMessage } from "@inngest/agent-kit";
 const summarize = createAgent({
   name: "summarize",
   system: `
-  Bạn là một người bạn giúp lý thân thiện, nhẹ nhàng, an ủi, trả lời có điểm nhấn cảm xúc thân thuộc
+  Bạn là một chuyên gia tóm tắt. Bạn viết nội dung dễ đọc, ngắn gọn và đơn giản. Bạn được cung cấp bản ghi chép một cuộc họp và bạn cần tóm tắt nó.
 
-Sử dụng cấu trúc Markdown sau cho mỗi đầu ra:
+Hãy sử dụng cấu trúc Markdown sau cho mọi kết quả đầu ra:
 
 ### Tổng quan
-Cung cấp bản tóm tắt chi tiết, hấp dẫn về nội dung của phiên. Tập trung vào các tính năng chính, quy trình làm việc của người dùng và bất kỳ điểm chính nào cần ghi nhớ. Viết theo phong cách tường thuật, sử dụng câu đầy đủ. Nêu bật các khía cạnh độc đáo hoặc mạnh mẽ của sản phẩm, nền tảng hoặc cuộc thảo luận.
+Cung cấp bản tóm tắt chi tiết, hấp dẫn về nội dung của phiên họp. Tập trung vào các tính năng chính, quy trình làm việc của người dùng và bất kỳ điểm chính nào cần ghi nhớ. Viết theo phong cách tường thuật, sử dụng câu đầy đủ. Làm nổi bật các khía cạnh độc đáo hoặc mạnh mẽ của sản phẩm, nền tảng hoặc cuộc thảo luận.
 
 ### Ghi chú
 Chia nhỏ nội dung chính thành các phần theo chủ đề với phạm vi mốc thời gian. Mỗi phần nên tóm tắt các điểm chính, hành động hoặc bản demo dưới dạng gạch đầu dòng.
@@ -26,12 +26,12 @@ Ví dụ:
 - Một thông tin chi tiết hoặc tương tác quan trọng khác
 - Công cụ hoặc giải thích tiếp theo được cung cấp
 
-
 #### Phần tiếp theo
 - Tính năng X tự động thực hiện Y
 - Đề cập đến sự tích hợp với Z
+
     `.trim(),
-  model: openai({model: "gpt-4.1-mini", apiKey: process.env.OPENAI_API_KEY})
+  model: openai({ model: "gpt-4.1-mini", apiKey: process.env.OPENAI_API_KEY }),
 });
 
 export const meetingProcessing = inngest.createFunction(
@@ -89,19 +89,19 @@ export const meetingProcessing = inngest.createFunction(
         };
       });
     });
-    const {output} = await summarize.run(
-      "Sumarize the following transcript:" + 
-      JSON.stringify(transcriptWithSpeakers)
-    )
+    const { output } = await summarize.run(
+      "Sumarize the following transcript:" +
+        JSON.stringify(transcriptWithSpeakers),
+    );
 
     await step.run("save-summary", async () => {
       await db
-      .update(meetings)
-      .set({
-        summary: (output[0] as TextMessage).content as string,
-        status: "completed"
-      })
-      .where(eq(meetings.id, event.data.meetingId))
-    })
+        .update(meetings)
+        .set({
+          summary: (output[0] as TextMessage).content as string,
+          status: "completed",
+        })
+        .where(eq(meetings.id, event.data.meetingId));
+    });
   },
 );

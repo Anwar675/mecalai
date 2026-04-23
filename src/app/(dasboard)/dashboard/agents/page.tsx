@@ -34,7 +34,7 @@ const Page = async ({ searchParams }: Props) => {
     }),
   );
   return (
-    <div className="h-full">
+    <div className="h-screen">
       <AgentListHeader />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <Suspense fallback={<AgentsViewLoading />}>
