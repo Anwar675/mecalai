@@ -9,13 +9,20 @@ interface Props {
 }
 
 export const CallUI = ({meetingName}: Props) => {
+    const [joining, setJoining] = useState(false)
     const call = useCall()
     const  [show,setShow] = useState<"lobby"|"call"|"ended">("lobby")
-    const handleJoin  = async () => {
-        if(!call) return 
-        await call.join()
-        setShow("call")
+    const handleJoin = async () => {
+    if (!call || joining) return;
+
+    try {
+        setJoining(true);
+        await call.join();
+        setShow("call");
+    } finally {
+        setJoining(false);
     }
+}
     const handleLeave  = async () => {
         if(!call) return 
         call.endCall()
