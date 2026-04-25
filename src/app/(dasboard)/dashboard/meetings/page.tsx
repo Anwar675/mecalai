@@ -35,7 +35,7 @@ const Page = async ({ searchParams }: Props) => {
     }),
   );
   return (
-    <div className="h-screen">
+    <div className="min-h-screen">
       <MeetingsListHeader />
       <HydrationBoundary state={dehydrate(queryClient)}>
         <Suspense fallback={<MeetingsViewLoading />}>

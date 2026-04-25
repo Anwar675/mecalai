@@ -1,9 +1,18 @@
 import { db } from "@/db";
-import { agents, meetings } from "@/db/schema";
+import { agents, meetings, user } from "@/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import z from "zod";
-import { and, count, desc, eq, getTableColumns, ilike, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  inArray,
+  sql,
+} from "drizzle-orm";
 import {
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
@@ -12,30 +21,45 @@ import {
 } from "@/lib/constanst";
 import { TRPCError } from "@trpc/server";
 import { meetingInsertSchema, meetingUpdateSchema } from "./schema";
-import { MeetingStatus } from "./type";
+import { MeetingStatus, StreamTranscriptItem } from "./type";
 import { streamVideo } from "@/lib/stream-video";
 import { GeneratedAvatarUrl } from "@/lib/avatar";
+import JSONL from "jsonl-parse-stringify";
+import { streamChat } from "@/lib/stream-chat";
 
 export const meetingsRouter = createTRPCRouter({
-  generateToken: protectedProcedure.mutation(async ({ctx}) => {
-      await streamVideo.upsertUsers([
-        {
-          id:ctx.auth.user.id,
-          name: ctx.auth.user.name,
-          role: "admin",
-          image: ctx.auth.user.image ?? GeneratedAvatarUrl({seed: ctx.auth.user.name, variant: "initials"})
-        }
-      ])
-      const expirationTime = Math.floor(Date.now() / 1000) + 3600
-      const issuedAt = Math.floor(Date.now() / 1000) - 60
-  
-      const token = streamVideo.generateUserToken({
-        user_id: ctx.auth.user.id,
-        exp: expirationTime,
-        validity_in_seconds: issuedAt
-      })
-      return token
-    }) ,
+  generateChatToken: protectedProcedure.mutation(async ({ ctx }) => {
+    const token = streamChat.createToken(ctx.auth.user.id);
+    //Be careFull
+    await streamChat.upsertUsers([
+      {
+        id: ctx.auth.user.id,
+        role: "admin",
+      },
+    ]);
+    return token
+  }),
+  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
+    await streamVideo.upsertUsers([
+      {
+        id: ctx.auth.user.id,
+        name: ctx.auth.user.name,
+        role: "admin",
+        image:
+          ctx.auth.user.image ??
+          GeneratedAvatarUrl({ seed: ctx.auth.user.name, variant: "initials" }),
+      },
+    ]);
+    const expirationTime = Math.floor(Date.now() / 1000) + 3600;
+    const issuedAt = Math.floor(Date.now() / 1000) - 60;
+
+    const token = streamVideo.generateUserToken({
+      user_id: ctx.auth.user.id,
+      exp: expirationTime,
+      validity_in_seconds: issuedAt,
+    });
+    return token;
+  }),
   create: protectedProcedure
     .input(meetingInsertSchema)
     .mutation(async ({ input, ctx }) => {
@@ -46,51 +70,51 @@ export const meetingsRouter = createTRPCRouter({
           userId: ctx.auth.user.id,
         })
         .returning();
-      const call = streamVideo.video.call("default", createMeetings.id)
+      const call = streamVideo.video.call("default", createMeetings.id);
       await call.create({
         data: {
           created_by_id: ctx.auth.user.id,
           custom: {
             meetingId: createMeetings.id,
-            meetingName: createMeetings.name
+            meetingName: createMeetings.name,
           },
           settings_override: {
             transcription: {
               language: "en",
               mode: "auto-on",
-              closed_caption_mode: "auto-on"
+              closed_caption_mode: "auto-on",
             },
             recording: {
               mode: "auto-on",
-              quality: "1080p"
-            }
-          }
-        }
-      })
+              quality: "1080p",
+            },
+          },
+        },
+      });
 
       const [existingAgent] = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.id, createMeetings.agentId))
+        .select()
+        .from(agents)
+        .where(eq(agents.id, createMeetings.agentId));
 
-      if(!existingAgent) {
+      if (!existingAgent) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Agent not found"
-        })
+          message: "Agent not found",
+        });
       }
 
       await streamVideo.upsertUsers([
         {
           id: existingAgent.id,
           name: existingAgent.name,
-          role:"user",
+          role: "user",
           image: GeneratedAvatarUrl({
             seed: existingAgent.name,
-            variant: "botttsNeutral"
-          })
-        }
-      ])
+            variant: "botttsNeutral",
+          }),
+        },
+      ]);
 
       return createMeetings;
     }),
@@ -128,6 +152,7 @@ export const meetingsRouter = createTRPCRouter({
       }
       return removed;
     }),
+
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
@@ -135,7 +160,7 @@ export const meetingsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(meetings),
           agent: agents,
-           duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
+          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
             "duration",
           ),
         })
@@ -151,6 +176,86 @@ export const meetingsRouter = createTRPCRouter({
         });
       }
       return existingMeeting;
+    }),
+  getTranscript: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [existingMeeting] = await db
+        .select()
+        .from(meetings)
+        .where(
+          and(eq(meetings.id, input.id), eq(meetings.userId, ctx.auth.user.id)),
+        );
+      if (!existingMeeting) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Meeting not found",
+        });
+      }
+      if (!existingMeeting.transcriptUrl) {
+        return [];
+      }
+      const transcript = await fetch(existingMeeting.transcriptUrl)
+        .then((res) => res.text())
+        .then((text) => JSONL.parse<StreamTranscriptItem>(text))
+        .catch(() => {
+          return [];
+        });
+      const speakerIds = [
+        ...new Set(transcript.map((item) => item.speaker_id)),
+      ];
+
+      const userSpeakers = await db
+        .select()
+        .from(user)
+        .where(inArray(user.id, speakerIds))
+        .then((users) =>
+          users.map((user) => ({
+            ...user,
+            image:
+              user.image ??
+              GeneratedAvatarUrl({ seed: user.name, variant: "initials" }),
+          })),
+        );
+      const agentSpeaker = await db
+        .select()
+        .from(agents)
+        .where(inArray(agents.id, speakerIds))
+        .then((agents) =>
+          agents.map((agent) => ({
+            ...agent,
+            image: GeneratedAvatarUrl({
+              seed: agent.name,
+              variant: "botttsNeutral",
+            }),
+          })),
+        );
+      const speakers = [...userSpeakers, ...agentSpeaker];
+      const transcriptWithSpeaker = transcript.map((item) => {
+        const speaker = speakers.find(
+          (speaker) => speaker.id === item.speaker_id,
+        );
+        if (!speaker) {
+          return {
+            ...item,
+            user: {
+              name: "Unknown",
+              image: GeneratedAvatarUrl({
+                seed: "Unknown",
+                variant: "initials",
+              }),
+            },
+          };
+        }
+        return {
+          ...item,
+          user: {
+            name: speaker.name,
+            image: speaker.image,
+          },
+        };
+      });
+      return transcriptWithSpeaker;
     }),
   getMany: protectedProcedure
     .input(

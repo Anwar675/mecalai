@@ -67,7 +67,7 @@ export const CallConnect = ({
   }, [client, meetingId]);
   if (!client || !call) {
     return (
-      <div className="flex h-screen items-center justify-center bg-radial from-sidebar-accent to-sidebar">
+      <div className="flex min-h-screen items-center justify-center bg-radial from-sidebar-accent to-sidebar">
         <Loader2Icon className="size-6 animation-spin text-white" />
 
       </div>

@@ -6,7 +6,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
       <DashBoardSidebar />
-      <main className="flex flex-col bg-[#D8E3EB] h-full w-full ">
+      <main className="flex flex-col bg-[#D8E3EB] min-h-screen w-full ">
         <DashbarNavbar />
         {children}
       </main>
