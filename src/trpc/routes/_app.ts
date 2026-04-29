@@ -2,10 +2,12 @@
 import { meetingsRouter } from '@/modules/meetings/server/procedures';
 import {  createTRPCRouter } from '../init';
 import { agentsRouter } from '@/modules/agents/server/procedures';
+import { premiumRouter } from '@/modules/home/server/procedures';
  
 export const appRouter = createTRPCRouter({
   agents: agentsRouter,
-  meetings: meetingsRouter
+  meetings: meetingsRouter,
+  premium: premiumRouter
 });
  
 

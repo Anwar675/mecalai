@@ -24,6 +24,7 @@ import { CommandSelect } from "./command-select";
 import { GeneratedAvatar } from "@/components/generate-avata";
 
 import { NewAgentDialog } from "@/modules/agents/ui/new-agent";
+import { useRouter } from "next/navigation";
 
 interface MeetingFormProps {
   onSuccess?: () => void;
@@ -37,7 +38,7 @@ export const MeetingForm = ({
   initialValues,
 }: MeetingFormProps) => {
   const trpc = useTRPC();
-
+  const router = useRouter()
   const queryClient = useQueryClient();
   const { data: agentsData } = useQuery(
     trpc.agents.getMany.queryOptions({
@@ -53,6 +54,8 @@ export const MeetingForm = ({
         await queryClient.invalidateQueries(
           trpc.meetings.getMany.queryOptions({}),
         );
+        await queryClient.invalidateQueries(trpc.premium.getFreeUsage.queryOptions());
+
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(
@@ -63,6 +66,9 @@ export const MeetingForm = ({
       },
       onError: (error) => {
         toast.error(error.message);
+        if(error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade")
+        }
       },
     }),
   );

@@ -26,12 +26,13 @@ export const AgentForm = ({
   initialValues,
 }: AgentFormProps) => {
   const trpc = useTRPC();
-  // const router = useRouter();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
+        await queryClient.invalidateQueries(trpc.premium.getFreeUsage.queryOptions());
         if(initialValues?.id) {
           await queryClient.invalidateQueries(trpc.agents.getOne.queryOptions({id : initialValues.id}));
         }
@@ -40,6 +41,9 @@ export const AgentForm = ({
 
       onError: (error) => {
         toast.error(error.message)  
+        if(error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade")
+        }
       },
     }),
   );
@@ -54,7 +58,7 @@ export const AgentForm = ({
   }
         onSuccess?.();
       },
-
+   
       onError: (error) => {
         toast.error(error.message)  
       },

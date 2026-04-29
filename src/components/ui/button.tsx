@@ -9,6 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        highlighted: "bg-[#77a0bb]",
         default: " border border-gray-300 py-2 text-black cursor-pointer",
         custom: "bg-[#185FA5] px-4 text-white cursor-pointer [a]:hover:bg-[#185FA5]/80",
         outline:

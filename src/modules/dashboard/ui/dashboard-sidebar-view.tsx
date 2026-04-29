@@ -18,6 +18,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarUserFooter } from "./sidebar-user-view";
+import { DashBoardTrial } from "./darhboard-trial";
 
 const firstSection = [
   {
@@ -36,7 +37,7 @@ const secondSection = [
   {
     icon: StarIcon,
     label: "Upgrade",
-    url: "/dashboard/upgrade",
+    url: "/upgrade",
   },
 ];
 
@@ -109,6 +110,7 @@ export const DashBoardSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <DashBoardTrial />
         <SidebarUserFooter />
       </SidebarFooter>
     </Sidebar>

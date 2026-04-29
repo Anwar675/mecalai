@@ -69,8 +69,10 @@ export const SidebarUserFooter = () => {
             Settings
           </DropdownMenuItem>
           <DropdownMenuItem className="py-2">
-            <DollarSignIcon className=" mr-2" />
-            Billing
+            <Button className="border-none" onClick={() => authClient.customer.portal()}>
+              <DollarSignIcon className=" mr-2" />
+              Billing{" "}
+            </Button>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
