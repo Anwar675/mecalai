@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { agents, meetings, user } from "@/db/schema";
+import { agents, meetingFeedbacks, meetings, user } from "@/db/schema";
 import { createTRPCRouter, premiumProcedure, protectedProcedure } from "@/trpc/init";
 
 import z from "zod";
@@ -28,9 +28,32 @@ import JSONL from "jsonl-parse-stringify";
 import { streamChat } from "@/lib/stream-chat";
 
 export const meetingsRouter = createTRPCRouter({
+  gettingFeedBack: protectedProcedure
+  .input(
+    z.object({
+      meetingId: z.string(),
+      type: z.enum(["summary", "transcript", "agent"]),
+      rating: z.enum(["like", "dislike"]),
+      feedback: z.string().optional(),
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
+    const [newFeedback] = await db
+      .insert(meetingFeedbacks)
+      .values({
+        meetingId: input.meetingId,
+        userId: ctx.auth.user.id,
+        type: input.type,
+        rating: input.rating,
+        feedback: input.feedback,
+      })
+      .returning();
+
+    return newFeedback;
+  }),
   generateChatToken: protectedProcedure.mutation(async ({ ctx }) => {
     const token = streamChat.createToken(ctx.auth.user.id);
-    //Be careFull
+   
     await streamChat.upsertUsers([
       {
         id: ctx.auth.user.id,

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { user } from "@/db/schema";
 import { authClient } from "@/lib/auth-client";
 import { GeneratedAvatarUrl } from "@/lib/avatar";
 import {
@@ -15,6 +14,7 @@ import Link from "next/link";
 
 interface Props {
   onJoin: () => void;
+  isJoining?: boolean;
 }
 
 const DisableVideoPreview = () => {
@@ -45,13 +45,13 @@ const AllowBrowserPermission = () => {
   );
 };
 
-export const CallLobby = ({ onJoin }: Props) => {
+export const CallLobby = ({ onJoin, isJoining = false }: Props) => {
   const { useCameraState, useMicrophoneState } = useCallStateHooks();
   const { hasBrowserPermission: hasMicPermission } = useMicrophoneState();
   const { hasBrowserPermission: hasCameraPermission } = useCameraState();
   const hasBrowserMediaPermission = hasCameraPermission && hasMicPermission;
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-radial from-sidebar-accent to-sidebar">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-radial from-sidebar-accent to-sidebar">
       <div className="py-4 px-8 flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-y-6  bg-background rounded-xl p-10 shadow-sm">
           <div className="flex flex-col gap-y-2 text-center ">
@@ -73,9 +73,14 @@ export const CallLobby = ({ onJoin }: Props) => {
             <Button variant="custom" className="bg-white text-black py-2 border-black " asChild>
               <Link href="/dashboard/meetings">Cancel</Link>
             </Button>
-            <Button variant="custom" className="py-2" onClick={onJoin}>
+            <Button
+              variant="custom"
+              className="py-2"
+              onClick={onJoin}
+              disabled={isJoining}
+            >
               <LogInIcon />
-              Join Call
+              {isJoining ? "Joining..." : "Join Call"}
             </Button>
           </div>
         </div>

@@ -2,8 +2,9 @@
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { PanelRight, PanelRightClose, SearchIcon } from "lucide-react";
-import { DashboardComment } from "./dashboard-comment";
+
 import { Key, useEffect, useState } from "react";
+import { DashboardSeach } from "./dashboard-search";
 
 export const DashbarNavbar = () => {
   const { state, toggleSidebar, isMobile } = useSidebar();
@@ -21,9 +22,9 @@ export const DashbarNavbar = () => {
 
   return (
     <>
-      {/* <DashboardComment open={commentOpen} setOpen={setCommentOpen}>
+      <DashboardSeach open={commentOpen} setOpen={setCommentOpen} />
           
-      </DashboardComment> */}
+      
       <nav className="flex gap-6 bg-white items-center border-b p-4">
         <Button onClick={toggleSidebar} className="p-2 rounded-md">
           {state === "collapsed" || isMobile ? (

@@ -20,7 +20,6 @@ interface Props {
 export function DashboardComment({ open, setOpen, children }: Props) {
   return (
     <div className="flex flex-col gap-4">
-      
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command >
          {children}

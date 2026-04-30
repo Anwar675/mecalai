@@ -32,9 +32,7 @@ export const premiumRouter = createTRPCRouter({
     });
 
     const subscription = customer.activeSubscriptions[0];
-    if (subscription) {
-      return null;
-    }
+   
 
     const [userMeeting] = await db
       .select({
@@ -50,6 +48,7 @@ export const premiumRouter = createTRPCRouter({
       .from(agents)
       .where(eq(agents.userId, ctx.auth.user.id));
     return {
+      isPremium: !!subscription,
       meetingsCount: userMeeting.count,
       agentCount: userAgent.count,
     };

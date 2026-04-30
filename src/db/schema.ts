@@ -37,6 +37,38 @@ export const meetingStatus = pgEnum("meeting_status", [
   "processing",
   "cancelled",
 ]);
+export const feedbackTypeEnum = pgEnum("feedback_type", [
+  "summary",
+  "transcript",
+  "agent",
+]);
+
+export const feedbackRatingEnum = pgEnum("feedback_rating", [
+  "like",
+  "dislike",
+]);
+
+export const meetingFeedbacks = pgTable("meeting_feedbacks", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+
+  meetingId: text("meeting_id")
+    .notNull()
+    .references(() => meetings.id, { onDelete: "cascade" }),
+
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+
+  type: feedbackTypeEnum("type").notNull(),
+
+  rating: feedbackRatingEnum("rating").notNull(),
+
+  feedback: text("feedback"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const meetings = pgTable("meetings", {
   id: text("id")
