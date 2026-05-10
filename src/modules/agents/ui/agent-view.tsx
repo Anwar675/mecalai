@@ -20,7 +20,7 @@ export const AgentsView = () => {
     ...filters,
     
   }));
-  console.log(data.items)
+ 
   return (
     <div className="flex-1 pb-4 px-4  md:px-8 flex flex-col gap-y-4">
       <DataTable onRowClick={(row) => router.push(`/dashboard/agents/${row.id}`)} columns={columns} data={data.items} />

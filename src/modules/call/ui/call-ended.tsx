@@ -20,12 +20,18 @@ export const CallEnded = ({ meetingId }: Props) => {
     trpc.meetings.gettingFeedBack.mutationOptions({
       onSuccess: () => {
         router.push("/dashboard/meetings");
-      },
+      }, 
     }),
   );
 
   const handleSelectRating = (value: "like" | "dislike") => {
     setRating(value);
+    createFeedback({
+      meetingId,
+      type: "summary",
+      rating: value,
+      feedback: feedbackText,
+    });
   };
 
   const handleSubmitFeedback = () => {

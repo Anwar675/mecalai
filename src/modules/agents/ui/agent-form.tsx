@@ -1,18 +1,22 @@
 import { useTRPC } from "@/trpc/client";
 import { AgentGetOne } from "../server/type";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import z from "zod";
 import { agentsInsertSchema } from "../server/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GeneratedAvatar } from "@/components/generate-avata";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
 
 interface AgentFormProps {
   onSuccess?: () => void;
@@ -28,21 +32,30 @@ export const AgentForm = ({
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  // const { data: voices = [], isLoading: isLoadingVoices } = useQuery(
+  //   trpc.agents.getVoices.queryOptions(),
+  // );
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
-        await queryClient.invalidateQueries(trpc.premium.getFreeUsage.queryOptions());
-        if(initialValues?.id) {
-          await queryClient.invalidateQueries(trpc.agents.getOne.queryOptions({id : initialValues.id}));
+        await queryClient.invalidateQueries(
+          trpc.agents.getMany.queryOptions({}),
+        );
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions(),
+        );
+        if (initialValues?.id) {
+          await queryClient.invalidateQueries(
+            trpc.agents.getOne.queryOptions({ id: initialValues.id }),
+          );
         }
         onSuccess?.();
       },
 
       onError: (error) => {
-        toast.error(error.message)  
-        if(error.data?.code === "FORBIDDEN") {
-          router.push("/upgrade")
+        toast.error(error.message);
+        if (error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade");
         }
       },
     }),
@@ -50,17 +63,19 @@ export const AgentForm = ({
   const updateAgent = useMutation(
     trpc.agents.update.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
-       if (initialValues?.id) {
-    await queryClient.invalidateQueries(
-      trpc.agents.getOne.queryOptions({ id: initialValues.id })
-    );
-  }
+        await queryClient.invalidateQueries(
+          trpc.agents.getMany.queryOptions({}),
+        );
+        if (initialValues?.id) {
+          await queryClient.invalidateQueries(
+            trpc.agents.getOne.queryOptions({ id: initialValues.id }),
+          );
+        }
         onSuccess?.();
       },
-   
+
       onError: (error) => {
-        toast.error(error.message)  
+        toast.error(error.message);
       },
     }),
   );
@@ -69,16 +84,15 @@ export const AgentForm = ({
     defaultValues: {
       name: initialValues?.name || "",
       instructions: initialValues?.instructions || "",
+      voiceId: initialValues?.voiceId || "",
     },
-
-
   });
 
   const isEdditing = !!initialValues?.id;
-  const isPending = createAgent.isPending || updateAgent.isPending
+  const isPending = createAgent.isPending || updateAgent.isPending;
   const onSubmit = (data: z.infer<typeof agentsInsertSchema>) => {
     if (isEdditing) {
-      updateAgent.mutate({...data, id:initialValues.id})
+      updateAgent.mutate({ ...data, id: initialValues.id });
     } else {
       createAgent.mutate(data);
     }
@@ -94,13 +108,15 @@ export const AgentForm = ({
         <Controller
           name="name"
           control={form.control}
-          render={({ field,fieldState }) => (
+          render={({ field, fieldState }) => (
             <Field>
               <FieldLabel>Name</FieldLabel>
-              <Input {...field} placeholder="e.g. Math tutor"  className={fieldState.invalid ? "border-red-500" : ""}/>
-              {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
+              <Input
+                {...field}
+                placeholder="e.g. Math tutor"
+                className={fieldState.invalid ? "border-red-500" : ""}
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />
@@ -115,22 +131,58 @@ export const AgentForm = ({
                 placeholder="You are a helpful assistant that can answer questions"
                 className={fieldState.invalid ? "border-red-500" : ""}
               />
-              {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                )}
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />
+        {/* <Controller
+          name="voiceId"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel>Voice</FieldLabel>
+
+              <select
+                {...field}
+                className="w-full border rounded-md p-2"
+                disabled={isLoadingVoices || isPending}
+              >
+                <option value="">
+                  {isLoadingVoices
+                    ? "-- Đang tải giọng cho agents --"
+                    : "-- Chọn giọng agents --"}
+                </option>
+                {voices.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        /> */}
       </FieldGroup>
 
       <div className="flex justify-between gap-4">
         {onCancel && (
-            <Button disabled={isPending} type="button" onClick={() => onCancel()} className="py-2 px-3 border-none rounded-md">
-                Cancel 
-            </Button>
+          <Button
+            disabled={isPending}
+            type="button"
+            onClick={() => onCancel()}
+            className="py-2 px-3 border-none rounded-md"
+          >
+            Cancel
+          </Button>
         )}
-        <Button disabled={isPending}  variant="custom" className="py-2 rounded-md" type="submit">
-            {isEdditing ? "Update" : "Create"}
+        <Button
+          disabled={isPending}
+          variant="custom"
+          className="py-2 rounded-md"
+          type="submit"
+        >
+          {isEdditing ? "Update" : "Create"}
         </Button>
       </div>
     </form>

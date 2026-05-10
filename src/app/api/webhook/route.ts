@@ -17,7 +17,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/stream-chat";
 import { GeneratedAvatarUrl } from "@/lib/avatar";
 
+
 const openAiClient = new OpenAI({ apiKey: process.env.OPEN_API_KEY! });
+
+const OPENAI_REALTIME_VOICES = [
+  "alloy",
+  "ash",
+  "ballad",
+  "coral",
+  "echo",
+  "sage",
+  "shimmer",
+  "verse",
+] as const;
+
+type OpenAiRealtimeVoice = (typeof OPENAI_REALTIME_VOICES)[number];
+
+function isOpenAiRealtimeVoice(voice?: string): voice is OpenAiRealtimeVoice {
+  if (!voice) return false;
+  return OPENAI_REALTIME_VOICES.includes(voice as OpenAiRealtimeVoice);
+}
 
 function verifySignatureWithSDK(body: string, signature: string): boolean {
   return streamVideo.verifyWebhook(body, signature);
@@ -99,10 +118,16 @@ export async function POST(req: NextRequest) {
       agentUserId: existingAgent.id,
     });
 
+    const selectedVoice = existingAgent.voiceId?.trim();
+    const realtimeVoice = isOpenAiRealtimeVoice(selectedVoice)
+      ? selectedVoice
+      : "verse";
+
     await realtimeClient.updateSession({
       model: "gpt-4.1",
       modalities: ["text"],
       instructions: existingAgent.instructions,
+      voice: realtimeVoice,
       turn_detection: {
         type: "server_vad",
       },
@@ -239,7 +264,7 @@ export async function POST(req: NextRequest) {
         name: existingAgent.name,
         image: avatarUrl,
       });
-
+      
       channel.sendMessage({
         text: GPTResponseText,
         user: {

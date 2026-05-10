@@ -9,7 +9,7 @@ import Link from "next/link";
 export const DashBoardTrial = () => {
   const trpc = useTRPC();
   const { data } = useQuery(trpc.premium.getFreeUsage.queryOptions());
-
+  
   if (!data) return null;
 
   return (

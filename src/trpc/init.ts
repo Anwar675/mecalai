@@ -40,7 +40,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
-export const premiumProcedure = (entity: "meetings" | "agents") => 
+export const premiumProcedure = (entity: "meetings" | "agents") =>
   protectedProcedure.use(async ({ ctx, next }) => {
     const customer = await polarClient.customers.getStateExternal({
       externalId: ctx.auth.user.id,
@@ -58,24 +58,29 @@ export const premiumProcedure = (entity: "meetings" | "agents") =>
       })
       .from(agents)
       .where(eq(agents.userId, ctx.auth.user.id));
-    const isPremium = customer.activeSubscriptions.length > 0
-    const isFreeAgentLimit = userAgent.count >= MAX_AGENT_FREE
-    const isFreeMeetingLimit = userMeeting.count >= MAX_FREE_MEETING
-    const shouldThrowMeeting = entity === "meetings" && isFreeMeetingLimit && !isPremium
-    const shouldThrowAgents = entity === "agents" && isFreeAgentLimit && !isPremium
+    const isPremium = customer.activeSubscriptions.length > 0;
+    const isFreeAgentLimit = userAgent.count >= MAX_AGENT_FREE;
+    const isFreeMeetingLimit = userMeeting.count >= MAX_FREE_MEETING;
+    const shouldThrowMeeting =
+      entity === "meetings" && isFreeMeetingLimit && !isPremium;
+    const shouldThrowAgents =
+      entity === "agents" && isFreeAgentLimit && !isPremium;
 
-    if(shouldThrowMeeting) {
+    console.log({
+      subs: customer.activeSubscriptions,
+      isPremium,
+    });
+    if (shouldThrowMeeting) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "You have reched the maximum number of free meetings"
-      })
+        message: "You have reched the maximum number of free meetings",
+      });
     }
-    if(shouldThrowAgents) {
+    if (shouldThrowAgents) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "You have reched the maximum number of free agents"
-      })
+        message: "You have reched the maximum number of free agents",
+      });
     }
-    return next({ctx: {...ctx, customer}})
+    return next({ ctx: { ...ctx, customer } });
   });
-
