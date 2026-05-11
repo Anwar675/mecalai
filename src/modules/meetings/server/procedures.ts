@@ -51,17 +51,70 @@ export const meetingsRouter = createTRPCRouter({
 
     return newFeedback;
   }),
-  generateChatToken: protectedProcedure.mutation(async ({ ctx }) => {
-    const token = streamChat.createToken(ctx.auth.user.id);
-   
-    await streamChat.upsertUsers([
-      {
-        id: ctx.auth.user.id,
-        role: "admin",
-      },
-    ]);
-    return token
-  }),
+  generateChatToken: protectedProcedure
+    .input(z.object({ meetingId: z.string().optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const token = streamChat.createToken(ctx.auth.user.id);
+
+      await streamChat.upsertUsers([
+        {
+          id: ctx.auth.user.id,
+          name: ctx.auth.user.name,
+          role: "admin",
+          image:
+            ctx.auth.user.image ??
+            GeneratedAvatarUrl({
+              seed: ctx.auth.user.name,
+              variant: "initials",
+            }),
+        },
+      ]);
+
+      if (input?.meetingId) {
+        const [existingMeeting] = await db
+          .select({
+            id: meetings.id,
+            userId: meetings.userId,
+            agentId: meetings.agentId,
+            agentName: agents.name,
+          })
+          .from(meetings)
+          .innerJoin(agents, eq(meetings.agentId, agents.id))
+          .where(
+            and(
+              eq(meetings.id, input.meetingId),
+              eq(meetings.userId, ctx.auth.user.id),
+            ),
+          );
+
+        if (!existingMeeting) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Meeting not found",
+          });
+        }
+
+        const agentImage = GeneratedAvatarUrl({
+          seed: existingMeeting.agentName,
+          variant: "botttsNeutral",
+        });
+
+        await streamChat.upsertUser({
+          id: existingMeeting.agentId,
+          name: existingMeeting.agentName,
+          image: agentImage,
+        });
+
+        const channel = streamChat.channel("messaging", input.meetingId, {
+          created_by_id: ctx.auth.user.id,
+          members: [ctx.auth.user.id, existingMeeting.agentId],
+        });
+
+        await channel.watch();
+      }
+
+      return token;
+    }),
   generateToken: protectedProcedure.mutation(async ({ ctx }) => {
     await streamVideo.upsertUsers([
       {

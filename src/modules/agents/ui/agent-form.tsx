@@ -1,7 +1,7 @@
 import { useTRPC } from "@/trpc/client";
 import { AgentGetOne } from "../server/type";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import z from "zod";
 import { agentsInsertSchema } from "../server/schema";
@@ -32,9 +32,16 @@ export const AgentForm = ({
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
-  // const { data: voices = [], isLoading: isLoadingVoices } = useQuery(
-  //   trpc.agents.getVoices.queryOptions(),
-  // );
+  const voices = [
+    { id: "Binh", name: "Thanh Bình (nam miền Bắc)" },
+    { id: "Tuyen", name: "Phạm Tuyên (nam miền Bắc)" },
+    { id: "Vinh", name: "Xuân Vĩnh (nam miền Nam)" },
+    { id: "Doan", name: "Thục Đoan (nữ miền Nam)" },
+    { id: "Ly", name: "Trúc Ly (nữ miền Bắc)" },
+    { id: "Son", name: "Thái Sơn (nam miền Nam)" },
+    { id: "Ngoc", name: "Bích Ngọc (nữ miền Bắc)" },
+  ];
+  const isLoadingVoices = false;
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
@@ -135,7 +142,7 @@ export const AgentForm = ({
             </Field>
           )}
         />
-        {/* <Controller
+        <Controller
           name="voiceId"
           control={form.control}
           render={({ field, fieldState }) => (
@@ -162,7 +169,7 @@ export const AgentForm = ({
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
-        /> */}
+        />
       </FieldGroup>
 
       <div className="flex justify-between gap-4">

@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
-import { agents, meetings } from "@/db/schema";
+import { agents, meetings, user } from "@/db/schema";
 import { inngest } from "@/inngest/client";
 import { streamVideo } from "@/lib/stream-video";
 import {
@@ -17,40 +17,86 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/stream-chat";
 import { GeneratedAvatarUrl } from "@/lib/avatar";
 
-
-const openAiClient = new OpenAI({ apiKey: process.env.OPEN_API_KEY! });
-
-const OPENAI_REALTIME_VOICES = [
-  "alloy",
-  "ash",
-  "ballad",
-  "coral",
-  "echo",
-  "sage",
-  "shimmer",
-  "verse",
-] as const;
-
-type OpenAiRealtimeVoice = (typeof OPENAI_REALTIME_VOICES)[number];
-
-function isOpenAiRealtimeVoice(voice?: string): voice is OpenAiRealtimeVoice {
-  if (!voice) return false;
-  return OPENAI_REALTIME_VOICES.includes(voice as OpenAiRealtimeVoice);
-}
+const openAiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const TTS_API_URL = process.env.VIENEU_TTS_URL ?? "http://localhost:8000/tts";
 
 function verifySignatureWithSDK(body: string, signature: string): boolean {
-  return streamVideo.verifyWebhook(body, signature);
+  return (
+    streamVideo.verifyWebhook(body, signature) ||
+    streamChat.verifyWebhook(body, signature)
+  );
+}
+
+function getAgentAvatarUrl(agentName: string) {
+  return GeneratedAvatarUrl({
+    seed: agentName,
+    variant: "botttsNeutral",
+  });
+}
+
+async function createTtsAudio(text: string, voiceId?: string | null) {
+  if (!voiceId) return null;
+
+  try {
+    const response = await fetch(TTS_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        voice_id: voiceId,
+        speed: 0.95,
+      }),
+    });
+
+    const contentType = response.headers.get("content-type");
+
+    if (!response.ok) {
+      console.error("TTS server returned an error", await response.text());
+      return null;
+    }
+
+    if (!contentType?.includes("audio/")) {
+      console.error("TTS server did not return audio", await response.text());
+      return null;
+    }
+
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+    return audioBuffer.byteLength > 0 ? audioBuffer : null;
+  } catch (error) {
+    console.error("TTS request failed", error);
+    return null;
+  }
+}
+
+async function createTtsAttachment(
+  channel: ReturnType<typeof streamChat.channel>,
+  text: string,
+  agentId: string,
+  voiceId?: string | null,
+) {
+  const audioBuffer = await createTtsAudio(text, voiceId);
+
+  if (!audioBuffer) return null;
+
+  const upload = await channel.sendFile(audioBuffer, "voice.wav", "audio/wav", {
+    id: agentId,
+  });
+
+  return {
+    type: "audio",
+    mime_type: "audio/wav",
+    asset_url: upload.file,
+    title: "voice.wav",
+  };
 }
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-signature");
-  const apiKey = req.headers.get("x-api-key");
 
-  if (!signature || !apiKey) {
-    return NextResponse.json(
-      { error: "Missing signature or API Key" },
-      { status: 400 },
-    );
+  if (!signature) {
+    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
   const body = await req.text();
@@ -108,36 +154,176 @@ export async function POST(req: NextRequest) {
       .select()
       .from(agents)
       .where(eq(agents.id, existingMeeting.agentId));
+
     if (!existingAgent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
+
+    const [existingUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, existingMeeting.userId));
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const call = streamVideo.video.call("default", meetingId);
+
+    const avatarUrl = getAgentAvatarUrl(existingAgent.name);
+
+    await streamChat.upsertUsers([
+      {
+        id: existingUser.id,
+        name: existingUser.name,
+        image:
+          existingUser.image ??
+          GeneratedAvatarUrl({ seed: existingUser.name, variant: "initials" }),
+      },
+      {
+        id: existingAgent.id,
+        name: existingAgent.name,
+        image: avatarUrl,
+      },
+    ]);
+
+    await call.getOrCreate({
+      data: {
+        created_by_id: existingAgent.id,
+        members: [
+          {
+            user_id: existingAgent.id,
+            role: "call_member",
+          },
+          { user_id: existingUser.id, role: "call_member" },
+        ],
+      },
+    });
+
+    await streamVideo.upsertUsers([
+      {
+        id: existingAgent.id,
+        name: existingAgent.name,
+        role: "user",
+        image: avatarUrl,
+      },
+    ]);
+
+    const audioChannel = streamChat.channel("messaging", meetingId, {
+      created_by_id: existingUser.id,
+      members: [existingUser.id, existingAgent.id],
+    });
+
+    await audioChannel.watch();
+
+    const turnDetection = {
+      type: "server_vad" as const,
+      create_response: false,
+    };
+    const liveMessages: ChatCompletionMessageParam[] = [];
+    const handledTranscriptIds = new Set<string>();
+
     const realtimeClient = await streamVideo.video.connectOpenAi({
       call,
       openAiApiKey: process.env.OPENAI_API_KEY!,
       agentUserId: existingAgent.id,
+      model: "gpt-4o-realtime-preview",
     });
-
-    const selectedVoice = existingAgent.voiceId?.trim();
-    const realtimeVoice = isOpenAiRealtimeVoice(selectedVoice)
-      ? selectedVoice
-      : "verse";
 
     await realtimeClient.updateSession({
-      model: "gpt-4.1",
       modalities: ["text"],
-      instructions: existingAgent.instructions,
-      voice: realtimeVoice,
-      turn_detection: {
-        type: "server_vad",
+      instructions:
+        "Chỉ phiên âm lời người dùng. Không tự tạo câu trả lời và không phát giọng OpenAI.",
+      input_audio_transcription: {
+        model: "whisper-1",
       },
+      turn_detection: turnDetection,
     });
+
+    realtimeClient.on(
+      "conversation.updated",
+      async ({
+        item,
+      }: {
+        item?: {
+          id: string;
+          role?: string;
+          formatted?: { transcript?: string };
+        };
+      }) => {
+        if (
+          !item ||
+          item.role !== "user" ||
+          handledTranscriptIds.has(item.id)
+        ) {
+          return;
+        }
+
+        const formatted = item.formatted;
+        const transcript = formatted?.transcript?.trim();
+
+        if (!transcript) return;
+
+        handledTranscriptIds.add(item.id);
+
+        const completion = await openAiClient.chat.completions.create({
+          messages: [
+            { role: "system", content: existingAgent.instructions },
+            ...liveMessages.slice(-8),
+            { role: "user", content: transcript },
+          ],
+          model: "gpt-4o",
+        });
+
+        const responseText = completion.choices[0].message.content?.trim();
+
+        if (!responseText) return;
+
+        liveMessages.push(
+          { role: "user", content: transcript },
+          { role: "assistant", content: responseText },
+        );
+
+        const attachment = await createTtsAttachment(
+          audioChannel,
+          responseText,
+          existingAgent.id,
+          existingAgent.voiceId,
+        );
+        if (!attachment) return;
+
+        await call.sendCallEvent({
+          user_id: existingAgent.id,
+          custom: {
+            type: "vieneu.audio",
+            text: responseText,
+            asset_url: attachment.asset_url,
+            mime_type: attachment.mime_type,
+            title: attachment.title,
+          },
+        });
+      },
+    );
   } else if (eventType === "call.session_participant_left") {
     const event = payload as CallSessionParticipantLeftEvent;
     const meetingId = event.call_cid.split(":")[1];
     if (!meetingId) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
+
+    const [existingMeeting] = await db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.id, meetingId));
+
+    if (!existingMeeting) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    if (event.participant.user.id === existingMeeting.agentId) {
+      return NextResponse.json({ status: "ok" });
+    }
+
     const call = streamVideo.video.call("default", meetingId);
     await call.end();
   } else if (eventType === "call.session_ended") {
@@ -251,22 +437,31 @@ export async function POST(req: NextRequest) {
         model: "gpt-4o",
       });
       const GPTResponseText = GPTResponse.choices[0].message.content;
+
       if (!GPTResponseText) {
         return NextResponse.json({ error: "No response from Chat GPT" });
       }
-      const avatarUrl = GeneratedAvatarUrl({
-        seed: existingAgent.name,
-        variant: "botttsNeutral",
-      });
+      const avatarUrl = getAgentAvatarUrl(existingAgent.name);
 
-      streamChat.upsertUser({
+      await streamChat.upsertUser({
         id: existingAgent.id,
         name: existingAgent.name,
         image: avatarUrl,
       });
-      
-      channel.sendMessage({
+
+      const attachment = await createTtsAttachment(
+        channel,
+        GPTResponseText,
+        existingAgent.id,
+        existingAgent.voiceId,
+      );
+      const attachments = [];
+
+      if (attachment) attachments.push(attachment);
+
+      await channel.sendMessage({
         text: GPTResponseText,
+        attachments,
         user: {
           id: existingAgent.id,
           name: existingAgent.name,
